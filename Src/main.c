@@ -114,16 +114,19 @@ int main(void)
   * @param  us
   * @retval None
   */
+/**
+  * @brief  us delay（基于 TIM1 计数）
+  * @note   TIM1 由 saf8100 驱动作为 1MHz 时基常驻运行，
+  *         这里不能再 Start/Stop，否则会把 OWI 时序的时基停掉。
+  */
 void delay_us2(uint32_t us)
 {
-  HAL_TIM_Base_Start(&htim1);    
-  uint16_t delay=0xffff-(us-2)-5;				
-  __HAL_TIM_SET_COUNTER(&htim1,delay);		
+  uint16_t delay=0xffff-(us-2)-5;
+  __HAL_TIM_SET_COUNTER(&htim1,delay);
   while(delay<0xffff-5)
   {
-     delay=__HAL_TIM_GET_COUNTER(&htim1); 
+     delay=__HAL_TIM_GET_COUNTER(&htim1);
   }
-  HAL_TIM_Base_Stop(&htim1);    
 }
 
 void delay_us(uint32_t us)

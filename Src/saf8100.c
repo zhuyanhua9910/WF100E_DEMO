@@ -633,6 +633,8 @@ uint8_t saf8100_measure_channel(uint8_t ch, Saf8100Data *out)
 /* ================= 初始化 ================= */
 void saf8100_init(void)
 {
+    uint16_t i;
+
     /* 确保 TIM1 以 1MHz 自由运行，作为 OWI 时间基准 */
     if (HAL_TIM_Base_Start(&htim1) != HAL_OK)
     {
@@ -641,6 +643,20 @@ void saf8100_init(void)
 
     memset(&saf8100_cfg, 0, sizeof(saf8100_cfg));
     memset(saf8100_data, 0, sizeof(Saf8100Data) * PRODUCT_NUM);
+
+    /* 关键：上电时所有通道必须标记为"未测试"。
+     * 若保持 0，err=0 会被上位机误判为"全部通过"。 */
+    for (i = 0; i < PRODUCT_NUM; i++)
+    {
+        saf8100_data[i].err = SAF8100_ERR_NOTTESTED;
+    }
+
+#if SAF8100_AUTO_VDD_ON
+    /* 打开总电源（U9 TPS7B7702 的 EN，PB2）。
+     * 不开则 VDD 与 +7.5V 都无输出，所有通道必然登录失败。
+     * 若实际硬件为低有效，把这里改成 GPIO_PIN_RESET。 */
+    HAL_GPIO_WritePin(VDD_EN_GPIO_Port, VDD_EN_Pin, GPIO_PIN_SET);
+#endif
 
     /* 上电默认配置，取值与官方 demo 一致：
      *   ZD = 16383, GD = 10000

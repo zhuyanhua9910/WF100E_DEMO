@@ -14,6 +14,7 @@
 
 //一类：系统指令
 #define TYPE1_GET_VERSION 		0x104
+#define TYPE1_SET_PRODUCT_VPP	0x200
 #define TYPE1_SET_PRODUCT_VDD	0x201
 
 //任务控制
@@ -31,12 +32,25 @@ uint16_t cmdStartChannel;
 
 
 TasksOrder Byte2Enum(uint16_t v) {
-	if (v < TS_MAX) {
+	/* 只接受实际存在的任务号，避免上位机下发已删除的任务（1~4）
+	 * 后静默不执行、现场难排查 */
+	switch (v) {
+	case TS_IDLE:
+	case TS_8100TEST:
+	case TS_8100MEAS:
+	case TS_8100FUSE:
 		return (TasksOrder) v;
-	} else {
-		// 处理错误或返回一个默认值
+	default:
 		return TS_MAX;
 	}
+}
+
+/* VPP 母线总闸（PB3）。注意：原理图上 VPP 是 8 个通道的高压/激励总开关，
+ * 打开后 VPP1~VPP4 才有输出，操作前请确认被测芯片的耐压。 */
+uint8_t SetProductVpp(uint8_t dp) {
+	GPIO_PinState ps = dp == 0xFF ? GPIO_PIN_SET : GPIO_PIN_RESET;
+	HAL_GPIO_WritePin(VPP_EN_GPIO_Port, VPP_EN_Pin, ps);
+	return HAL_GPIO_ReadPin(VPP_EN_GPIO_Port, VPP_EN_Pin) == ps ? 1 : 0;
 }
 
 uint8_t SetProductVdd(uint8_t dp) {
@@ -55,7 +69,11 @@ void ParseSystemCmd(uint16_t *cmd, uint8_t cmd_lens, uint16_t *out, uint16_t out
 			AsciiToByteArray((const char*)FIRMWARE_VERSION, out);
 		break;
 
-        case TYPE1_SET_PRODUCT_VDD:
+		case TYPE1_SET_PRODUCT_VPP://200:VPP 母线总闸
+			out[0] = SetProductVpp(cmd[2]);
+		break;
+
+        case TYPE1_SET_PRODUCT_VDD://201:总电源
             out[0] = SetProductVdd(cmd[2]);
         break;
 

@@ -36,7 +36,7 @@ uint16_t      VDD_PINS[JIG_COL]  = { VDD1_EN_Pin, VDD2_EN_Pin,
  * 未参与本次测试的通道结果置 err = 0xFE
  * ========================================================== */
 
-#define CH_NOT_TESTED   0xFE
+#define CH_NOT_TESTED   SAF8100_ERR_NOTTESTED
 
 static uint8_t saf8100_channel_mask(void)
 {
