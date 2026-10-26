@@ -33,7 +33,8 @@
 | `Drivers/FreeModbus/Modbus.c` | 寄存器回调映射：输入寄存器 30001+（120 个）、保持寄存器 40001+（64 个） |
 | `Drivers/PY32F002B_HAL_Driver/` | 普冉官方 HAL 库 |
 | `Projects/MDK-ARM/` | Keil MDK 工程（`Project.uvprojx`），输出 `Project.hex` 等 |
-| `Doc/SOP100E 2025.05.27.eprj` | 硬件工程文件（SQLite 容器，立创EDA专业版格式），对应治具原理图 / PCB |
+| `Doc/SOP100E 2025.05.27.eprj` | 硬件工程源文件（SQLite 容器，立创EDA专业版格式），对应治具原理图 / PCB |
+| `Doc/SOP100E_SCH_2026-10-21.pdf` | 原理图导出版（2 页，2026-10-21），含 VPP1~4、VDD1~4、OUT1~4_EN、PY32 主控，与本固件引脚定义一致 |
 
 > 备注：Keil 的 include 路径里仍保留 `Drivers\FreeRTOS\...`，但该目录并不存在，属于模板残留，可清理。
 
