@@ -112,6 +112,17 @@ extern          BOOL( *pxMBFrameCBTransmitterEmpty ) ( void );
 
 extern          BOOL( *pxMBPortCBTimerExpired ) ( void );
 
+/* ----------------------- 通信质量计数（诊断用） ---------------------------*/
+/* 全部从上电开始累计，用于判断"命令为什么没应答"。 */
+extern volatile USHORT mb_rx_bytes;    /* 收到的字节总数 */
+extern volatile USHORT mb_frames_ok;   /* CRC 正确、通过校验的帧数 */
+extern volatile USHORT mb_crc_fail;    /* CRC 错误被丢弃的帧数 */
+extern volatile USHORT mb_ore_cnt;     /* 串口溢出（硬件丢字节）次数 */
+extern volatile UCHAR  mb_max_gap;     /* 帧内最大字节间隔，单位 tick(1.75ms) */
+
+/* 每收到帧内一个新字节调用一次，用来统计字节间隔 */
+void            vMBPortRecordByteGap( void );
+
 /* ----------------------- TCP port functions -------------------------------*/
 BOOL            xMBTCPPortInit( USHORT usTCPPort );
 

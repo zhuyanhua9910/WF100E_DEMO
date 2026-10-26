@@ -104,6 +104,13 @@ uint16_t saf8100_read_temp(void);
 uint8_t  saf8100_fuse_otp(void);
 uint8_t  saf8100_last_error(void);
 
+/* 诊断：单通道 OWI 探测。返回登录应答（0x55 正常 / 0xFF 失败），
+ * 同时把最近一次应答的原始相位、VDD 使能脚电平、OWI 线空闲电平带出去。
+ * 用来区分"芯片完全没应答"和"应答了但解码失败"。 */
+uint8_t  saf8100_owi_probe(uint8_t ch, uint16_t *phases,
+                           uint16_t *low, uint16_t *high,
+                           uint8_t *vdd, uint8_t *idle);
+
 /* 位域组合辅助：把枚举值拼成寄存器字节 */
 uint8_t  saf8100_make_pga(uint8_t g1, uint8_t g3, uint8_t g2);
 uint8_t  saf8100_make_adc_ctrl(uint8_t osr, uint8_t avg_num);

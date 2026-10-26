@@ -177,9 +177,11 @@ eMBRTUReceive( UCHAR * pucRcvAddress, UCHAR ** pucFrame, USHORT * pusLength )
         /* Return the start of the Modbus PDU to the caller. */
         *pucFrame = ( UCHAR * ) & ucRTUBuf[MB_SER_PDU_PDU_OFF];
         xFrameReceived = TRUE;
+        mb_frames_ok++;
     }
     else
     {
+        mb_crc_fail++;
         eStatus = MB_EIO;
     }
 
@@ -280,6 +282,7 @@ xMBRTUReceiveFSM( void )
         {
             eRcvState = STATE_RX_ERROR;
         }
+        vMBPortRecordByteGap(  );
         vMBPortTimersEnable(  );
         break;
     }

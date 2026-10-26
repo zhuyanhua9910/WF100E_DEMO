@@ -28,3 +28,13 @@ JLinkSettings.ini
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# ===== 上位机测试工具 Tools/Modbus测试工具 =====
+# exe 是 pyinstaller 打包产物（10MB 二进制）不入库
+# 需要 exe 时：python build_exe.py
+Tools/Modbus*测试工具/*.exe
+Tools/Modbus*测试工具/raw_frames.log
+Tools/Modbus*测试工具/build/
+Tools/Modbus*测试工具/dist/
+Tools/Modbus*测试工具/__pycache__/
+Tools/Modbus*测试工具/*.spec

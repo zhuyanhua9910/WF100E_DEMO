@@ -23,6 +23,15 @@
 
 //SAF8100 操作
 #define TYPE5_GET_8100_DATA		0x610
+#define TYPE5_OWI_PROBE			0x6A0
+#define TYPE5_MB_QUALITY		0x6A1
+
+/* 通信质量计数（定义在 porttimer.c），这里直接引用 */
+extern volatile unsigned short mb_frames_ok;
+extern volatile unsigned short mb_crc_fail;
+extern volatile unsigned short mb_rx_bytes;
+extern volatile unsigned short mb_ore_cnt;
+extern volatile unsigned char  mb_max_gap;
 #define TYPE5_SET_8100_CONFIG	0x780
 
 uint16_t cmdHead;
@@ -120,6 +129,44 @@ void ParseProductCmd(uint16_t *cmd, uint8_t cmd_lens, uint16_t *out, uint16_t ou
 	 *   [7] temp_x100（温度 ×100，有符号）
 	 * 120/8 = 15 颗，一次最多读 15 颗
 	 */
+	/* 诊断：单通道 OWI 探测。参数 cmd[2] = 通道号。
+	 * 返回 8 个寄存器：
+	 *   [0] 高字节 = 登录应答(0x55/0xFF)，低字节 = 采样到的相位数
+	 *   [1] 高字节 = VDDx_EN 引脚电平，低字节 = OWI 线空闲电平
+	 *   [2..7] 前三个相位的高/低电平宽度（us）
+	 * 判读：相位数 = 0 → 芯片根本没应答（没电/没接/芯片坏）；
+	 *       相位数 > 0 但登录失败 → 应答了但解码不过（时序/上拉问题）。 */
+	case TYPE5_OWI_PROBE:
+	{
+		uint16_t ph = 0, lo[4] = {0, 0, 0, 0}, hi[4] = {0, 0, 0, 0};
+		uint8_t vdd = 0, idle = 0;
+		uint8_t lg = saf8100_owi_probe((uint8_t)cmd[2], &ph, lo, hi, &vdd, &idle);
+
+		out[0] = (uint16_t)(((uint16_t)lg << 8) | (ph & 0xFFu));
+		out[1] = (uint16_t)(((uint16_t)vdd << 8) | idle);
+		out[2] = lo[0]; out[3] = hi[0];
+		out[4] = lo[1]; out[5] = hi[1];
+		out[6] = lo[2]; out[7] = hi[2];
+	}
+	break;
+
+	/* 诊断：通信质量计数（上电后累计），用来判断"命令为什么没应答"：
+	 *   [0] CRC 正确帧数   [1] CRC 错帧数
+	 *   [2] 帧内最大字节间隔（tick，1 tick=1.75ms）—— 大于 1 说明线上有停顿
+	 *   [3] 收到字节总数   [4] 串口溢出次数（硬件丢字节，最硬的证据）
+	 * 判读：溢出 = 0 但 CRC 错帧多 → 线上字节不连续（USB 拆包）；
+	 *       溢出 > 0               → CPU 取数据不及时，丢字节。 */
+	case TYPE5_MB_QUALITY:
+		out[0] = mb_frames_ok;
+		out[1] = mb_crc_fail;
+		out[2] = mb_max_gap;
+		out[3] = mb_rx_bytes;
+		out[4] = mb_ore_cnt;
+		out[5] = 0;
+		out[6] = 0;
+		out[7] = 0;
+		break;
+
 	case TYPE5_GET_8100_DATA:
 		cmdStartChannel = cmd[2];
 		for (_i = 0; _i < 15; _i++) {

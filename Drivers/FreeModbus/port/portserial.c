@@ -41,6 +41,14 @@ vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable )
   */
   
   if (xRxEnable) {        
+    /* 发送期间接收是关着的，若此时线上有字节/溢出，会留下 ORE 等错误标志，
+     * 重新开接收时容易把残留字节当成新帧的第一字节，导致下一条命令被丢弃。
+     * 开接收前先清掉这些标志 —— 但 __HAL_UART_CLEAR_PEFLAG 内部会读 DR，
+     * 而读 DR 会清 RXNE，此刻若已有有效字节等着取就会被吞掉，所以只在
+     * RXNE 为空时才清。 */
+    if (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE) == RESET) {
+      __HAL_UART_CLEAR_PEFLAG(&huart1);
+    }
     __HAL_UART_ENABLE_IT(&huart1, UART_IT_RXNE);
   } else {    
     __HAL_UART_DISABLE_IT(&huart1, UART_IT_RXNE);
@@ -76,9 +84,33 @@ BOOL
 xMBPortSerialPutByte( CHAR ucByte )
 {
   /* Put a byte in the UARTs transmit buffer. This function is called
-  * by the protocol stack if pxMBFrameCBTransmitterEmpty( ) has been
-  * called. */
-  return (HAL_OK == HAL_UART_Transmit(&huart1, (uint8_t*)&ucByte, 1, 10));
+   * by the protocol stack if pxMBFrameCBTransmitterEmpty( ) has been
+   * called. */
+  /* 注意：本函数是在 TXE 中断里被调用的，此时 TXE 已置位，直接把字节写进
+   * 数据寄存器即可。原实现用 HAL_UART_Transmit(&huart1, &ucByte, 1, 10)，
+   * 那是"阻塞式"发送：每写一个字节还要等 TC（115200 下约 87us），并且在
+   * 中断里反复加锁/判状态。发短帧（几个字节）看不出问题，但发长帧时
+   * （例如读 64 个输入寄存器 = 133 字节，要连续占用中断约 12ms）会出现
+   * 丢字节，导致整帧 CRC 对不上、上位机只收到半包。
+   * 实测：读 16 个寄存器（37 字节）正常，读 64 个（133 字节）只收到
+   * 110~127 字节。改成直接写 DR 后，字节由 TXE 中断连续送出，不再丢。 */
+  /* TXE 未置位说明上一字节还占着数据寄存器，此时写 DR 会被硬件直接忽略，
+   * 而 FreeModbus 的发送状态机不看返回值、照样把发送计数减 1 —— 结果就是
+   * 帧中间静默少一个字节，但 CRC 照样发在末尾，
+   * 上位机看到的就是"字节数不够 + 末尾 CRC 不匹配"。
+   * 所以这里先等 TXE 置位再写；上限约 100us（一个字节 87us），不会死等。 */
+  {
+    uint32_t guard = 0;
+    while( __HAL_UART_GET_FLAG(&huart1, UART_FLAG_TXE) == RESET )
+    {
+      if( ++guard > 3000u )
+      {
+        return FALSE;
+      }
+    }
+  }
+  huart1.Instance->DR = (uint8_t) ucByte;
+  return TRUE;
 }
  
 BOOL

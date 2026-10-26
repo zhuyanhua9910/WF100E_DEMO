@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SAF8100 Modbus 测试工具</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">8100</div>
+    <div class="brand-txt">
+      <h1>SAF8100 Modbus 测试工具</h1>
+      <p>WF100E 八通道治具 · Modbus RTU 从站</p>
+    </div>
+  </div>
+
+  <div class="conn">
+    <span class="dot" id="dot"></span>
+    <span class="conn-text" id="connText">未连接</span>
+    <select id="portSel" title="已授权串口，或选择新串口">
+      <option value="new">＋ 选择新串口…</option>
+    </select>
+    <select id="baudSel" title="波特率（固件默认 115200）">
+      <option value="115200" selected>115200</option>
+      <option value="57600">57600</option>
+      <option value="38400">38400</option>
+      <option value="9600">9600</option>
+    </select>
+    <button class="btn primary" id="btnConnect">连接串口</button>
+    <button class="btn ghost" id="btnDisconnect" disabled>断开</button>
+  </div>
+</header>
+
+<div class="banner hidden" id="banner"></div>
+
+<main class="layout">
+
+  <!-- ================= 左栏 ================= -->
+  <section class="col-left">
+
+    <!-- 系统 -->
+    <div class="card">
+      <div class="card-hd">
+        <h2>系统</h2>
+        <span class="hint">40001=1</span>
+      </div>
+      <div class="card-bd">
+        <div class="btn-row">
+          <button class="btn" id="btnVersion">读版本 0x104</button>
+          <button class="btn" id="btnVddOn">总电源开</button>
+          <button class="btn" id="btnVddOff">总电源关</button>
+        </div>
+        <div class="mini-note">版本回读：<span class="mono" id="versionText">—</span></div>
+      </div>
+    </div>
+
+    <!-- 任务 -->
+    <div class="card">
+      <div class="card-hd">
+        <h2>任务</h2>
+        <span class="hint">40001=5 / 40002=0x77</span>
+      </div>
+      <div class="card-bd">
+        <div class="form-row">
+          <label for="taskSel">任务号</label>
+          <select id="taskSel">
+            <option value="5" selected>T5 · 全流程测试</option>
+            <option value="6">T6 · 快速测温</option>
+            <option value="7">T7 · OTP 烧写（不可逆）</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label>通道</label>
+          <div class="chips" id="chips"></div>
+        </div>
+
+        <div class="form-row">
+          <label for="maskVal">掩码</label>
+          <div class="inline">
+            <input class="mono" id="maskVal" value="0xFF" size="6">
+            <button class="btn tiny" id="btnMaskAll">全选</button>
+            <button class="btn tiny" id="btnMaskNone">清空</button>
+            <span class="mini-note" id="maskText">全部</span>
+          </div>
+        </div>
+
+        <button class="btn primary wide" id="btnRun">一键测试并读取</button>
+        <div class="btn-row gap-top">
+          <button class="btn" id="btnSendTask">仅下发任务</button>
+          <button class="btn ghost" id="btnQuery">查询状态</button>
+        </div>
+
+        <div class="progress">
+          <div class="bar"><i id="progBar"></i></div>
+          <div class="prog-row">
+            <span id="progText">空闲</span>
+            <span class="mono" id="progNum"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 数据 -->
+    <div class="card">
+      <div class="card-hd">
+        <h2>测试数据</h2>
+        <span class="hint">读 30001 起</span>
+      </div>
+      <div class="card-bd">
+        <div class="btn-row">
+          <button class="btn primary" id="btnRead">读取 0x610</button>
+          <button class="btn ghost" id="btnCsv">导出 CSV</button>
+        </div>
+        <div class="mini-note" id="readText">尚未读取数据</div>
+      </div>
+    </div>
+
+    <!-- 配置 -->
+    <div class="card">
+      <div class="card-hd">
+        <h2>芯片配置</h2>
+        <span class="hint">0x780 · 下次任务生效</span>
+      </div>
+      <div class="card-bd">
+        <div class="form-row">
+          <label for="cfgGd">增益 DAC</label>
+          <div class="inline">
+            <input class="mono" id="cfgGd" value="10000" size="8">
+            <span class="mini-note">0x08/09 · 0~16383</span>
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="cfgZd">零点 DAC</label>
+          <div class="inline">
+            <input class="mono" id="cfgZd" value="16383" size="8">
+            <span class="mini-note">0x0A/0B · 0~16383</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>PGA 增益</label>
+          <div class="inline">
+            <select id="cfgG1"></select>
+            <select id="cfgG3"></select>
+            <select id="cfgG2"></select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>基准 / VCM</label>
+          <div class="inline">
+            <select id="cfgVref"></select>
+            <select id="cfgRefGain"></select>
+            <select id="cfgVcm"></select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>采样</label>
+          <div class="inline">
+            <select id="cfgOsr"></select>
+            <select id="cfgAvg"></select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label for="cfgSys">0x44</label>
+          <div class="inline">
+            <input class="mono" id="cfgSys" value="00" size="4">
+            <span class="mini-note" id="sysText">OWI 允许 / 电压驱动</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label for="cfgLut">0x47</label>
+          <div class="inline">
+            <input class="mono" id="cfgLut" value="00" size="4">
+            <span class="mini-note" id="lutText">LOAD_LUT=0</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>生效</label>
+          <div class="inline wrap">
+            <label class="check"><input type="checkbox" id="cfgValid" checked> 配置生效 (valid)</label>
+            <label class="check"><input type="checkbox" id="cfgExt"> 额外写 0x44/0x47 (ext_en)</label>
+          </div>
+        </div>
+
+        <div class="preview mono" id="cfgPreview"></div>
+
+        <div class="btn-row gap-top">
+          <button class="btn primary" id="btnCfgWrite">下发配置</button>
+          <button class="btn ghost" id="btnCfgReset">官方默认值</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 手动 -->
+    <div class="card">
+      <div class="card-hd">
+        <h2>手动指令</h2>
+        <span class="hint">调试用</span>
+      </div>
+      <div class="card-bd">
+        <div class="form-row">
+          <label for="addrMode">地址基准</label>
+          <div class="inline">
+            <select id="addrMode" title="决定 PDU 里填的起始地址">
+              <option value="fw" selected>40000 / 30000（本固件）</option>
+              <option value="zero">0 / 0（标准 0 基从机）</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="manFunc">功能码</label>
+          <div class="inline">
+            <select id="manFunc">
+              <option value="4" selected>04 读输入寄存器</option>
+              <option value="3">03 读保持寄存器</option>
+              <option value="16">10 写多寄存器</option>
+            </select>
+            <input class="mono" id="manAddr" value="30000" size="6" title="PDU 绝对地址">
+            <input class="mono" id="manCount" value="8" size="4" title="读取数量 / 写入个数">
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="manValues">数据</label>
+          <input class="mono" id="manValues" placeholder="写入时填：1, 0x104（十进制或 0x 十六进制）">
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="btnManSend">发送</button>
+        </div>
+        <div class="form-row gap-top">
+          <label for="manRaw">原始帧</label>
+          <input class="mono" id="manRaw" placeholder="如：01 04 75 30 00 00 08 …">
+        </div>
+        <div class="btn-row">
+          <button class="btn ghost" id="btnRawSend">直接发送（CRC 不对会自动重算）</button>
+        </div>
+        <div class="mini-note">
+          固件里 FreeModbus 会把 PDU 地址 +1 再判断 <span class="mono">== 40001/30001</span>，
+          所以命令帧地址填 <span class="mono">40000 / 30000</span>。手动地址是 PDU 绝对地址。
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ================= 右栏 ================= -->
+  <section class="col-right">
+
+    <div class="card grow">
+      <div class="card-hd">
+        <h2>测试结果</h2>
+        <div class="hd-tools">
+          <span class="hint" id="summary">尚未读取</span>
+          <label class="check small"><input type="checkbox" id="autoRead" checked> 任务完成后自动读取</label>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table class="tbl" id="tbl">
+          <thead>
+            <tr>
+              <th class="w-ch">通道</th>
+              <th>状态</th>
+              <th><span>登录</span><em>0x55</em></th>
+              <th><span>错误</span><em>err</em></th>
+              <th><span>增益 DAC</span><em>0x08/09</em></th>
+              <th><span>零点 DAC</span><em>0x0A/0B</em></th>
+              <th><span>PGA</span><em>0x45</em></th>
+              <th><span>ADC</span><em>0x4B</em></th>
+              <th><span>基准</span><em>0x48</em></th>
+              <th><span>系统</span><em>0x44</em></th>
+              <th><span>LUT</span><em>0x47</em></th>
+              <th><span>温度码</span><em>code</em></th>
+              <th><span>温度</span><em>℃</em></th>
+              <th><span>烧写</span><em>fuse</em></th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr class="empty-row"><td colspan="14">连接串口后点击「一键测试并读取」，或先读取 0x610 数据</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">
+        <h2>通道详情</h2>
+        <span class="hint" id="detailTitle">点击表格中的通道查看位域</span>
+      </div>
+      <div class="card-bd" id="detail">
+        <div class="detail-hint">每一列都对应芯片内部寄存器，位域解析见这里。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">
+        <h2>通信日志</h2>
+        <div class="hd-tools">
+          <label class="check small"><input type="checkbox" id="showRaw" checked> 显示原始帧</label>
+          <label class="check small"><input type="checkbox" id="autoScroll" checked> 自动滚动</label>
+          <button class="btn tiny ghost" id="btnClearLog">清空</button>
+          <button class="btn tiny ghost" id="btnDemo" title="无硬件时预览界面">演示数据</button>
+        </div>
+      </div>
+      <div class="card-bd">
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+
+  </section>
+</main>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

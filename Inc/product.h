@@ -4,7 +4,7 @@
 #include "main.h"
 #include "saf8100.h"
 
-#define FIRMWARE_VERSION "8100 v1.0"
+#define FIRMWARE_VERSION "8100 v1.7"   /* v1.7：修 0x6A0 探测把 MCU 卡死（中断里不能用 HAL_Delay） */
 //从站地址
 #define MODBUS_ADDRESS 1
 

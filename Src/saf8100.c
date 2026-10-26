@@ -312,7 +312,7 @@ static uint8_t owi_transceive(const uint8_t *tx, uint8_t txlen,
 /* ================= 通道控制 ================= */
 void saf8100_select(uint8_t ch)
 {
-    uint8_t row, col;
+    uint8_t row, col, i;
 
     if (ch >= PRODUCT_NUM)
     {
@@ -320,6 +320,14 @@ void saf8100_select(uint8_t ch)
     }
     row = (uint8_t)(ch / JIG_COL);
     col = (uint8_t)(ch % JIG_COL);
+
+    /* 关键：先把 4 列 VDD 全部关掉，再选本列。
+     * 原实现只保存当前列、从不清其它列，测到第 3 颗以后 4 列全带电；
+     * 同一行（同一根 OWI 线）上多颗芯片会同时应答 → 总线冲突 → 登录失败。
+     * 现场表现：跑过一轮之后所有通道都是 FF 01 / 登录失败。 */
+    for (i = 0; i < JIG_COL; i++) {
+        HAL_GPIO_WritePin(VDD_PORTS[i], VDD_PINS[i], GPIO_PIN_RESET);
+    }
 
     g_owi_port = OWI_PORTS[row];
     g_owi_pin  = OWI_PINS[row];
@@ -337,12 +345,30 @@ void saf8100_power_off(void)
 }
 
 /* 官方 demo 的上电时序：断电 100ms → 上电 → 等 20ms */
+/* 毫秒延时，但**不依赖任何中断**：用 TIM1 的 1MHz 计数轮询。
+ *
+ * 为什么不能用 HAL_Delay：
+ * saf8100_owi_probe() 是在 Modbus 中断上下文里被调用的
+ *   TIM14_IRQHandler → eMBPoll → eMBRegHoldingCB → Parse → saf8100_owi_probe
+ * 而 HAL_Delay 等的是 SysTick 中断里递增的 uwTick。SysTick 优先级最低
+ * （15），无法抢占正在执行的 TIM14 中断（优先级 0），所以 uwTick 永远不
+ * 增加，HAL_Delay 会在这里死等 —— 整个 MCU 卡死在这条中断里，
+ * 表现就是"这条命令没有应答，而且之后所有命令都没有应答，必须断电重启"。
+ * 现场已实测复现：0x6A0 探测 24 次全部无应答。 */
+static void owi_delay_ms(uint16_t ms)
+{
+    while (ms--)
+    {
+        tdelay(1000);   /* TIM1 轮询 1ms，不需要中断 */
+    }
+}
+
 static void saf8100_power_cycle(void)
 {
     HAL_GPIO_WritePin(g_vdd_port, g_vdd_pin, GPIO_PIN_RESET);
-    HAL_Delay(100);
+    owi_delay_ms(100);
     HAL_GPIO_WritePin(g_vdd_port, g_vdd_pin, GPIO_PIN_SET);
-    HAL_Delay(20);
+    owi_delay_ms(20);
 }
 
 /* ================= 基础命令 ================= */
@@ -365,6 +391,36 @@ uint8_t saf8100_login(void)
         return SAF8100_ACK;
     }
     return 0xFF;
+}
+
+/* ================= 诊断：单通道 OWI 探测 ================= */
+uint8_t saf8100_owi_probe(uint8_t ch, uint16_t *phases,
+                          uint16_t *low, uint16_t *high,
+                          uint8_t *vdd, uint8_t *idle)
+{
+    uint8_t i, login;
+
+    if (ch >= PRODUCT_NUM) {
+        return 0xFE;
+    }
+
+    saf8100_select(ch);
+    login = saf8100_login();          /* 内部：断电 100ms → 上电 20ms → 发 F3 A0 */
+
+    *phases = rxPhases;
+    for (i = 0; i < 4; i++) {
+        low[i]  = (i < rxPhases) ? rxLow[i]  : 0;
+        high[i] = (i < rxPhases) ? rxHigh[i] : 0;
+    }
+
+    /* VDDx_EN 引脚的实际电平（读回，不是我们写下去的值） */
+    *vdd = (HAL_GPIO_ReadPin(g_vdd_port, g_vdd_pin) == GPIO_PIN_SET) ? 1 : 0;
+
+    /* OWI 线空闲电平：1 = 高（有上拉、总线空闲），0 = 被拉低 */
+    owi_pin_in();
+    *idle = OWI_READ() ? 1 : 0;
+
+    return login;
 }
 
 uint8_t saf8100_read_reg(uint8_t addr)

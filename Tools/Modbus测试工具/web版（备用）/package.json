@@ -1,0 +1,6 @@
+{
+  "name": "saf8100-modbus-tool",
+  "private": true,
+  "type": "module",
+  "description": "SAF8100 Modbus 测试工具（Web Serial）"
+}
