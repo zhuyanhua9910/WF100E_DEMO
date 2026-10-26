@@ -450,6 +450,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\Src\product.c</FilePath>
             </File>
+            <File>
+              <FileName>saf8100.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Src\saf8100.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

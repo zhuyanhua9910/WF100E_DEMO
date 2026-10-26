@@ -253,6 +253,62 @@ void RTOS_CALDATA(void){
 	task.order = TS_IDLE;
 }
 
+/* ==================== SAF8100 测试任务 ====================
+ * 流程与官方 hal_saf8100_example() 一致：
+ *   登录 → 读原始配置 → 写配置 → 回读校验 → 测温
+ * 结果存入 saf8100_data[i]，由 Modbus 命令 0x610 回读
+ * ========================================================== */
+
+void RTOS_8100TEST(void)
+{
+	uint16_t i;
+
+	task.isTaskBusy = 1;
+	task.prog = 0;
+	for (i = 0; i < PRODUCT_NUM; i++) {
+		task.prog++;
+		saf8100_test_channel((uint8_t)i, &saf8100_cfg, &saf8100_data[i]);
+		HAL_Delay(1);
+	}
+	task.isTaskBusy = 0;
+	task.prog = PRODUCT_NUM;
+	task.order = TS_IDLE;
+}
+
+void RTOS_8100MEAS(void)
+{
+	uint16_t i;
+
+	task.isTaskBusy = 1;
+	task.prog = 0;
+	for (i = 0; i < PRODUCT_NUM; i++) {
+		task.prog++;
+		saf8100_measure_channel((uint8_t)i, &saf8100_data[i]);
+		HAL_Delay(1);
+	}
+	task.isTaskBusy = 0;
+	task.prog = PRODUCT_NUM;
+	task.order = TS_IDLE;
+}
+
+void RTOS_8100FUSE(void)
+{
+	uint16_t i;
+
+	task.isTaskBusy = 1;
+	task.prog = 0;
+	for (i = 0; i < PRODUCT_NUM; i++) {
+		task.prog++;
+		saf8100_data[i].fuse_done = 0;
+		/* 先按配置完整测试一遍，通过后再烧写 OTP */
+		saf8100_fuse_channel((uint8_t)i, &saf8100_cfg, &saf8100_data[i]);
+		HAL_Delay(1);
+	}
+	task.isTaskBusy = 0;
+	task.prog = PRODUCT_NUM;
+	task.order = TS_IDLE;
+}
+
 void AsciiToByteArray(const  char* str, uint16_t* array) {
     for (int i = 0; i < strlen(str); i++) {
         array[i] = str[i];

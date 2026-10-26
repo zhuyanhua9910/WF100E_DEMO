@@ -2,6 +2,7 @@
 #define INC_PRODUCT_H_
 
 #include "main.h"
+#include "saf8100.h"
 
 #define FIRMWARE_VERSION "100E v1.1"
 //从站地址
@@ -29,6 +30,9 @@ typedef enum
   TS_RAWDATA,
   TS_OTP,
   TS_CALDATA,
+  TS_8100TEST = 5,   /* SAF8100 全流程测试：登录→读配置→写配置→回读→测温 */
+  TS_8100MEAS = 6,   /* SAF8100 快速测温 */
+  TS_8100FUSE = 7,   /* SAF8100 配置 + OTP 烧写 */
   TS_MAX
 } TasksOrder;
 
@@ -63,5 +67,8 @@ void RTOS_GET_OTPDATA(void);
 void RTOS_SET_OTPDATA(void);
 void RTOS_OTP(void);
 void RTOS_CALDATA(void);
+void RTOS_8100TEST(void);
+void RTOS_8100MEAS(void);
+void RTOS_8100FUSE(void);
 void AsciiToByteArray(const char* str, uint16_t* array);
 #endif//INC_PRODUCT_H_

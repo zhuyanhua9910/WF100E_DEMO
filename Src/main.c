@@ -74,6 +74,9 @@ int main(void)
 	 
 	HAL_TIM_Base_Start(&htim1);    
 
+	/* 初始化 SAF8100 驱动（时间基准 + 默认配置） */
+	saf8100_init();
+
 	eMBInit(MB_RTU, 1, 1, 115200, MB_PAR_NONE);
 
 	eMBEnable();
@@ -100,6 +103,18 @@ int main(void)
 
 		case TS_CALDATA:
 			RTOS_CALDATA();
+			break;
+
+		case TS_8100TEST:
+			RTOS_8100TEST();
+			break;
+
+		case TS_8100MEAS:
+			RTOS_8100MEAS();
+			break;
+
+		case TS_8100FUSE:
+			RTOS_8100FUSE();
 			break;
 
 		default:
