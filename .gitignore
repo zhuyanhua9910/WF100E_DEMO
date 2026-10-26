@@ -1,0 +1,30 @@
+# ===== Keil MDK 构建输出 =====
+Projects/MDK-ARM/Output/
+*.o
+*.d
+*.crf
+*.axf
+*.hex
+*.bin
+*.elf
+*.map
+*.lnp
+*.dep
+*.lst
+*.sct
+*.iex
+*.htm
+*.build_log.htm
+
+# ===== Keil 本机界面 / 调试器配置（因人而异，不入库）=====
+*.uvguix.*
+*.uvopt.bak
+*.uvprojx.bak
+JLinkLog.txt
+JLinkSettings.ini
+
+# ===== 工具与系统杂项 =====
+.workbuddy/
+Thumbs.db
+desktop.ini
+.DS_Store
