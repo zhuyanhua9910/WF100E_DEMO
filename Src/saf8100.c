@@ -513,8 +513,13 @@ static uint8_t saf8100_run(uint8_t ch, const Saf8100Cfg *cfg, Saf8100Data *out, 
         saf8100_write_reg(PGA_GAIN_REG, cfg->pga_gain);
         saf8100_write_reg(PGA_CTRL_REG, cfg->pga_ctrl);
         saf8100_write_reg(ADC_CTRL_REG, cfg->adc_ctrl);
-        saf8100_write_reg(SYS_CTRL_REG, cfg->sys_ctrl);
-        saf8100_write_reg(LUT_SEL_REG, cfg->lut_sel);
+        /* SYS_CTRL / LUT_SEL 官方 demo 不写，默认保持原值，
+         * 仅当上位机显式要求（ext_en=1）时才写入，避免清掉芯片内已有校准位 */
+        if (cfg->ext_en)
+        {
+            saf8100_write_reg(SYS_CTRL_REG, cfg->sys_ctrl);
+            saf8100_write_reg(LUT_SEL_REG, cfg->lut_sel);
+        }
         if (g_err != SAF8100_ERR_NONE)
         {
             out->err = SAF8100_ERR_COMM;

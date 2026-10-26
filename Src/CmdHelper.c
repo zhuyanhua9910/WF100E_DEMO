@@ -216,7 +216,9 @@ void ParseProductCmd(uint16_t *cmd, uint8_t cmd_lens, uint16_t *out, uint16_t ou
 		saf8100_cfg.adc_ctrl = (uint8_t) cmd[7];
 		saf8100_cfg.sys_ctrl = (uint8_t) cmd[8];
 		saf8100_cfg.lut_sel  = (uint8_t) cmd[9];
-		saf8100_cfg.valid    = (uint8_t) (cmd[10] ? 1 : 0);
+		/* cmd[10]: bit0 = valid（1 生效），bit1 = ext_en（1 才额外写 0x44/0x47） */
+		saf8100_cfg.valid    = (uint8_t) (cmd[10] & 0x01);
+		saf8100_cfg.ext_en   = (uint8_t) ((cmd[10] >> 1) & 0x01);
 		out[0] = 1;
 		break;
 	}

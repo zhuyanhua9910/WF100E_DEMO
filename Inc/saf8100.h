@@ -73,9 +73,10 @@ typedef struct
     uint8_t  pga_gain;   /* 0x45 */
     uint8_t  pga_ctrl;   /* 0x48 */
     uint8_t  adc_ctrl;   /* 0x4B */
-    uint8_t  sys_ctrl;   /* 0x44 */
-    uint8_t  lut_sel;    /* 0x47 */
+    uint8_t  sys_ctrl;   /* 0x44（仅 ext_en = 1 时写入） */
+    uint8_t  lut_sel;    /* 0x47（仅 ext_en = 1 时写入） */
     uint8_t  valid;      /* 1 = 已由上位机写入过 */
+    uint8_t  ext_en;     /* 1 = 额外写 SYS_CTRL / LUT_SEL（默认 0，与官方 demo 一致） */
 } Saf8100Cfg;
 
 /* ========================= 全局变量 ========================= */
