@@ -4,7 +4,7 @@
 #include "main.h"
 #include "saf8100.h"
 
-#define FIRMWARE_VERSION "100E v1.1"
+#define FIRMWARE_VERSION "8100 v1.0"
 //从站地址
 #define MODBUS_ADDRESS 1
 

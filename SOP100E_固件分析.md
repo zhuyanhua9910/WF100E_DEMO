@@ -2,7 +2,7 @@
 
 > 工程路径：`WF100E_DEMO`  
 > 目标芯片：PY32F002B（Cortex-M0+，24MHz，24KB Flash / 6KB RAM）  
-> 固件版本串：`100E v1.1`（`product.h` 中 `FIRMWARE_VERSION`）  
+> 固件版本串：`8100 v1.0`（`product.h` 中 `FIRMWARE_VERSION`）  
 > 分析日期：2026-10-26
 
 ---
@@ -225,7 +225,7 @@ flowchart LR
 
 | 命令码 | 含义 | 参数 / 返回 |
 | --- | --- | --- |
-| `0x104` | 读固件版本 | 返回 ASCII `"100E v1.1"` |
+| `0x104` | 读固件版本 | 返回 ASCII `"8100 v1.0"` |
 | `0x200` | 设置 VPP | `recvBuf[2]`：`0xFF` = 开高压，其他 = 关 |
 | `0x201` | 设置总 VDD（PB2） | `recvBuf[2]`：`0xFF` = 开 |
 
