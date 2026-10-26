@@ -23,9 +23,6 @@ extern uint16_t      OWI_PINS[];
 extern GPIO_TypeDef *VDD_PORTS[];
 extern uint16_t      VDD_PINS[];
 
-/* product.c 的通道缓存：8100 会改变引脚方向，必须让它失效 */
-extern uint16_t      lastChannel;
-
 /* ================= 全局数据 ================= */
 Saf8100Cfg  saf8100_cfg;
 Saf8100Data saf8100_data[PRODUCT_NUM];
@@ -328,9 +325,6 @@ void saf8100_select(uint8_t ch)
     g_owi_pin  = OWI_PINS[row];
     g_vdd_port = VDD_PORTS[col];
     g_vdd_pin  = VDD_PINS[col];
-
-    /* 引脚方向被本模块改动过，使 product.c 的通道缓存失效 */
-    lastChannel = 0xFFFF;
 
     owi_pin_out();
 }

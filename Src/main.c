@@ -40,12 +40,10 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* Private user code ---------------------------------------------------------*/
-struct  Product product[PRODUCT_NUM];
 struct Task task;
 /* Private macro -------------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
 
-uint32_t adc_valule;
 /**
   * @brief  Main program.
   * @retval int
@@ -88,21 +86,6 @@ int main(void)
 		case TS_IDLE:
 			//注意：此处不要清 isTaskBusy。上位机可能刚下发新指令，若在这里清忙标志会被误判为空闲，导致任务被提前终止
 			//isTaskBusy = 0;
-			break;
-		case TS_SCAN:			//扫描产品
-			RTOS_SCAN();
-			break;
-
-		case TS_RAWDATA:
-			RTOS_RAWDATA();
-			break;
-    
-		case TS_OTP:
-			RTOS_OTP();
-			break;
-
-		case TS_CALDATA:
-			RTOS_CALDATA();
 			break;
 
 		case TS_8100TEST:

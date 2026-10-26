@@ -401,11 +401,6 @@
               <FilePath>..\..\Drivers\FreeModbus\Modbus.c</FilePath>
             </File>
             <File>
-              <FileName>JH1101.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Src\JH1101.c</FilePath>
-            </File>
-            <File>
               <FileName>gpio.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Src\gpio.c</FilePath>

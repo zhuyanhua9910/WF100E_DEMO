@@ -341,6 +341,24 @@ T(℃) = (temp_code - 32383.8) / 114.2
 | `Src/main.c` | `saf8100_init()` 初始化；主循环新增 3 个任务分支 |
 | `Projects/MDK-ARM/Project.uvprojx` | 加入 `Src/saf8100.c` 编译单元 |
 
+### 6.1 已移除的 JH1101 相关内容（2026-10-26）
+
+本工程已定位为 **SAF8100 测试专用**，原 JH1101 业务代码全部删除：
+
+| 移除项 | 说明 |
+| --- | --- |
+| `Src/JH1101.c`、`Inc/JH1101.h` | 原 1-Wire 芯片驱动，已删除并从 Keil 工程移除 |
+| `RTOS_SCAN` / `RTOS_RAWDATA` / `RTOS_OTP` / `RTOS_CALDATA` | 四个 JH1101 任务，连同上位机下发入口一并删除 |
+| `SetChannel()`、`ADC_CHANNELS[]`、`lastChannel` | JH1101 的通道缓存与 ADC 通道映射 |
+| `struct Product`、`product[]`、`ERROR_CODE`、`REG_NUM` | JH1101 的 OTP 数据与错误码定义 |
+| 命令 `0x600` / `0x602` / `0x604` / `0x702` / `0x704` | 读状态 / 读原始数据 / 读 OTP / 写 OTP / 关闭通道 |
+| 命令 `0x200`（VPP 高压） | JH1101 OTP 烧写用；SAF8100 的 OTP 通过寄存器 `0x04=0x81` 触发，不需要 VPP |
+| `TS_SCAN` / `TS_RAWDATA` / `TS_OTP` / `TS_CALDATA` | 任务枚举，现仅保留 `TS_8100TEST/MEAS/FUSE` |
+
+保留项：通道映射表 `OWI_PORTS/VDD_PORTS`（8100 复用）、命令 `0x104`（版本）、`0x201`（总电源）、`0x66/0x77`（任务控制）。
+
+> 命令码 `5`（产品类）与 `0x104`（系统类）保持不变，上位机只需去掉 JH1101 相关命令即可。
+
 编译校验：`arm-none-eabi-gcc -fsyntax-only -Wall` 对 4 个改动文件全部通过，无告警。
 
 ---
